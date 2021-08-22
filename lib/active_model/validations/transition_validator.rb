@@ -3,11 +3,16 @@ module ActiveModel
     class TransitionValidator < ActiveModel::Validator
       def initialize(options)
         super
-        # validate_transitions :doors, from: 'opened', to: 'closed', requires: { state: 'parked' }
         @column              = options[:column].to_s
         valid_transitions    = options[:valid_transitions]
         @when_validations    = options[:when_validations]
+        @inclusive           = options[:inclusive
         @allowed_transitions = {}
+
+        build_valid_transition_lookup(valid_transitions)
+      end
+
+      def build_valid_transition_lookup(valid_transitions)
         valid_transitions.each do |transition|
           [transition[:from]].flatten.each do |from|
             [transition[:to]].flatten.each do |to|
@@ -30,7 +35,6 @@ module ActiveModel
             end
           end
         end
-
       end
 
       def validate(record)
@@ -40,11 +44,19 @@ module ActiveModel
         changes = record.changes
         return true unless changes.has_key?(@column)
 
-        column_change  = changes[@column]
-        original_value = column_change[0]
-        new_value      = column_change[1]
-        transition = @allowed_transitions[original_value].find { |allowed_transition| allowed_transition[new_value] }
+        column_change     = changes[@column]
+        original_value    = column_change[0]
+        new_value         = column_change[1]
+        valid_transitions = @allowed_transitions[original_value]
+
+        if valid_transitions.nil?
+          add_inclusion_errors(record, original_value, new_value) if @inclusive
+          return true
+        end
+
+        transition = valid_transitions.find { |allowed_transition| allowed_transition[new_value] }
         return invalid_transition_error(record, original_value, new_value) unless transition
+
         requires_validation = transition[new_value][:requires_validation]
         return true unless requires_validation
 
@@ -53,6 +65,13 @@ module ActiveModel
       end
 
       private
+
+      def add_inclusion_errors(record, original_value, new_value)
+        record.errors.add(
+          @column.to_sym,
+          "#{@column} cannot transition from #{original_value} to #{new_value}."
+        )
+      end
 
       def when_condition_unmet?(record)
         met_conditions = @when_validations.map do |attribute, when_values|

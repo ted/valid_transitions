@@ -53,9 +53,16 @@ module ActiveModel
       def test_multiple_when_to_one_to
         car = Car.create(state: 'parked', doors: 'closed', condition: 'working')
         car.update!(condition: 'broken')
-        car.update!(condition: 'working')
-        car.update!(condition: 'requires_service')
+      end
 
+      def test_inclusion_false
+        car = Car.create(state: 'parked', doors: 'closed', condition: 'broken')
+        car.update!(condition: 'working')
+      end
+
+      def test_inclusion_false_with_when
+        car = Car.create(state: 'parked', doors: 'opened', brand: 'bmw')
+        car.update!(doors: 'closed')
       end
 
     end
