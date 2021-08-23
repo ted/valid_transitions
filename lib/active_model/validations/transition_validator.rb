@@ -6,7 +6,7 @@ module ActiveModel
         @column              = options[:column].to_s
         valid_transitions    = options[:valid_transitions]
         @when_validations    = options[:when_validations]
-        @inclusive           = options[:inclusive
+        @inclusive           = options[:inclusive]
         @allowed_transitions = {}
 
         build_valid_transition_lookup(valid_transitions)
