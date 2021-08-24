@@ -19,16 +19,16 @@ module ValidTransitions
 
     def validate_transition_content(transitions)
       transitions.each do |transition|
-        raise_error("transition #{transition} missing key :to") unless transition.has_key?('to')
+        raise_error("transition #{transition} missing key :to")   unless transition.has_key?('to')
         raise_error("transition #{transition} missing key :from") unless transition.has_key?('from')
       end
     end
 
     def validate_when(options)
       return true unless options[:when]
-      return true if options[:when].is_a?(Hash)
+      return true if     options[:when].is_a?(Hash)
 
-      raise_error("when is #{options[:when]}, which should be a hash")
+      raise_error(":when is #{options[:when]}, which should be a Hash")
     end
 
     def raise_error(message)
