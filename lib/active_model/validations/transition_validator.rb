@@ -75,7 +75,7 @@ module ActiveModel
 
       def when_condition_unmet?(record)
         met_conditions = @when_validations.map do |attribute, when_values|
-                           current_value = record.send(attribute)
+                           current_value = record.read_attribute(attribute)
                            [when_values].flatten.include?(current_value)
                          end
 
@@ -85,7 +85,7 @@ module ActiveModel
       def validate_requires_field(all_requires, original_value, new_value, record)
         all_requires.each do |requirement|
           requirement.map do |attribute, allowed_values|
-            current_value = record.send(attribute)
+            current_value = record.read_attribute(attribute)
             next if allowed_values.include?(current_value)
 
             add_requires_error(record, original_value, new_value, attribute, current_value)
