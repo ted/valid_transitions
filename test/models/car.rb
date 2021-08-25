@@ -21,5 +21,5 @@ class Car < ActiveRecord::Base
                        transitions: [
                          { from: %w[working requires_service], to: %w[working requires_service broken] },
                        ],
-                       inclusive: true
+                       inclusive: false
 end
