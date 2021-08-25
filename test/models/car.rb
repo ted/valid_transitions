@@ -3,7 +3,7 @@ class Car < ActiveRecord::Base
   validates :doors,     inclusion: { in: %w[opened closed]}
   validates :condition, inclusion: { in: %w[working requires_service broken]}
   validate_transitions :state, transitions: [
-                                 { from: %w[reverse],  to: %w[1st_gear] },
+                                 { from: %w[reverse],  to: %w[parked 1st_gear] },
                                  { from: %w[parked],   to: %w[reverse 1st_gear] },
                                  { from: %w[1st_gear], to: %w[parked 2nd_gear] },
                                  { from: %w[2nd_gear], to: %w[1st_gear 3rd_gear] },
@@ -21,5 +21,5 @@ class Car < ActiveRecord::Base
                        transitions: [
                          { from: %w[working requires_service], to: %w[working requires_service broken] },
                        ],
-                       inclusive: false
+                       inclusive: true
 end

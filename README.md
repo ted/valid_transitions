@@ -21,24 +21,133 @@ Or install it yourself as:
     $ gem install valid_transitions
 
 ## Usage
+`valid_transitions` helps you define ActiveRecord attribute validation to prevent invalid data from going to the database.
 
-TODO: Write usage instructions here
+As an example, let's say you have this `Car` model:
+```ruby
+class Car < ActiveRecord::Base
+  validates :state,     inclusion: { in: %w[reverse parked 1st_gear 2nd_gear 3rd_gear]}
+  validates :doors,     inclusion: { in: %w[opened closed]}
+  validates :condition, inclusion: { in: %w[working requires_service broken]}
+  validate_transitions :state, transitions: [
+                                 { from: %w[reverse],  to: %w[parked 1st_gear] },
+                                 { from: %w[parked],   to: %w[reverse 1st_gear] },
+                                 { from: %w[1st_gear], to: %w[parked 2nd_gear] },
+                                 { from: %w[2nd_gear], to: %w[1st_gear 3rd_gear] },
+                                 { from: %w[3rd_gear], to: %w[2nd_gear] }
+                               ]
+end
+```
 
-## Development
+When a car is updated from `reverse` to `3rd_gear` using `.update`, the record will fail to persist due to validation.
+```ruby
+car = Car.create(state: 'reverse', doors: 'closed', brand: 'bmw')
+car.update(state: '3rd_gear')
+=> false
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+car.errors.messages
+{:state=>["state cannot transition from reverse to 3rd_gear"]}
+car.save!
+ActiveRecord::RecordInvalid: Validation failed: State state cannot transition from reverse to 3rd_gear
+```
+- `requires:` allows you to run conditional validation on your state transitions. For an example:
+    ```ruby
+    class Car < ActiveRecord::Base
+      validates :state,     inclusion: { in: %w[reverse parked 1st_gear 2nd_gear 3rd_gear]}
+      validates :doors,     inclusion: { in: %w[opened closed]}
+      validate_transitions :state, transitions: [
+                                     { from: %w[reverse],  to: %w[parked 1st_gear] },
+                                     { from: %w[parked],   to: %w[reverse 1st_gear] },
+                                     { from: %w[1st_gear], to: %w[parked 2nd_gear] },
+                                     { from: %w[2nd_gear], to: %w[1st_gear 3rd_gear] },
+                                     { from: %w[3rd_gear], to: %w[2nd_gear] }
+                                   ]
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+      validate_transitions :doors,
+                           transitions: [
+                             { from: %w[closed opened], to: %w[closed opened], requires: { state: 'parked' } }
+                           ]
+    end
+    ```
+    `validate_transitions :doors` will fail to persist unless state is `parked`
 
-## Contributing
+    ```ruby
+    car = Car.create(state: '1st_gear', brand: 'tesla', doors: 'closed')
+    car.update(doors: 'opened')
+    => false
+    car.errors.messages
+    => {:doors=>["doors cannot transition from closed to opened while state is 1st_gear"]}
+    ```
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/valid_transitions. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/[USERNAME]/valid_transitions/blob/master/CODE_OF_CONDUCT.md).
+- `when:` allows you to only run validations when another condition is met. For an example:
+    ```ruby
+    class Car < ActiveRecord::Base
+      validates :state,     inclusion: { in: %w[reverse parked 1st_gear 2nd_gear 3rd_gear]}
+      validates :doors,     inclusion: { in: %w[opened closed]}
+      validate_transitions :state, transitions: [
+                                     { from: %w[reverse],  to: %w[parked 1st_gear] },
+                                     { from: %w[parked],   to: %w[reverse 1st_gear] },
+                                     { from: %w[1st_gear], to: %w[parked 2nd_gear] },
+                                     { from: %w[2nd_gear], to: %w[1st_gear 3rd_gear] },
+                                     { from: %w[3rd_gear], to: %w[2nd_gear] }
+                                   ]
 
+      validate_transitions :doors,
+                           transitions: [
+                             { from: %w[closed opened], to: %w[closed opened], requires: { state: 'parked' } }
+                           ],
+                           when: { brand: %w[porsche tesla] }
+    end
 
+    ```
+    `validate_transitions :doors` will only be executed when brand is `tesla` or `porsche`.
+
+    ```ruby
+    car = Car.create(state: '1st_gear', brand: 'toyota', doors: 'closed')
+    car.update(doors: 'opened')
+    => true
+    ```
+- `inclusive:` allows you to only allow transitions you've included in the list. By default this is `true`.
+    ```ruby
+    class Car < ActiveRecord::Base
+      #...
+      validate_transitions :condition,
+                           transitions: [
+                             { from: %w[working requires_service], to: %w[working requires_service broken] },
+                           ],
+                           inclusive: false
+    end
+
+    ```
+
+    By passing `inclusive:` as `false`, updating `condition` from a value that is not included in the list will pass validation.
+    ```ruby
+    car = Car.create(condition: 'broken', state: '1st_gear', brand: 'toyota', doors: 'closed')
+    car.update(condition: 'working')
+    => true
+    ```
+
+    When inclusive is `true`, the default value, an error will occur:
+    ```ruby
+    class Car < ActiveRecord::Base
+      #...
+      validate_transitions :condition,
+                           transitions: [
+                             { from: %w[working requires_service], to: %w[working requires_service broken] },
+                           ],
+                           inclusive: true
+    end
+
+    car = Car.create(condition: 'broken', state: '1st_gear', brand: 'toyota', doors: 'closed')
+    car.update(condition: 'working')
+    => false
+    car.errors.messages
+    => {:condition=>["condition cannot transition from broken to working."]}
+    ```
 ## License
 
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
 
 ## Code of Conduct
 
-Everyone interacting in the ValidTransitions project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/valid_transitions/blob/master/CODE_OF_CONDUCT.md).
+Everyone interacting in the ValidTransitions project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/ted/valid_transitions/blob/master/CODE_OF_CONDUCT.md).
