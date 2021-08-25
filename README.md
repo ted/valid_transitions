@@ -46,6 +46,7 @@ car.errors.messages
 car.save!
 ActiveRecord::RecordInvalid: Validation failed: State state cannot transition from reverse to 3rd_gear
 ```
+#### Options
 - `requires:` allows you to run conditional validation on your state transitions. For an example:
     ```ruby
     class Car < ActiveRecord::Base
