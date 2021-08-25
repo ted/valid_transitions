@@ -94,7 +94,11 @@ ActiveRecord::RecordInvalid: Validation failed: State state cannot transition fr
 
       validate_transitions :doors,
                            transitions: [
-                             { from: %w[closed opened], to: %w[closed opened], requires: { state: 'parked' } }
+                             {
+                                from: %w[closed opened],
+                                to: %w[closed opened],
+                                requires: { state: 'parked' }
+                             }
                            ],
                            when: { brand: %w[porsche tesla] }
     end
@@ -113,7 +117,10 @@ ActiveRecord::RecordInvalid: Validation failed: State state cannot transition fr
       #...
       validate_transitions :condition,
                            transitions: [
-                             { from: %w[working requires_service], to: %w[working requires_service broken] },
+                             {
+                                from: %w[working requires_service],
+                                to: %w[working requires_service broken]
+                             },
                            ],
                            inclusive: false
     end
@@ -133,7 +140,10 @@ ActiveRecord::RecordInvalid: Validation failed: State state cannot transition fr
       #...
       validate_transitions :condition,
                            transitions: [
-                             { from: %w[working requires_service], to: %w[working requires_service broken] },
+                             {
+                                from: %w[working requires_service],
+                                to: %w[working requires_service broken]
+                             },
                            ],
                            inclusive: true
     end
