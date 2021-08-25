@@ -65,7 +65,11 @@ ActiveRecord::RecordInvalid: Validation failed: State state cannot transition fr
 
       validate_transitions :doors,
                            transitions: [
-                             { from: %w[closed opened], to: %w[closed opened], requires: { state: 'parked' } }
+                             {
+                                from: %w[closed opened],
+                                to: %w[closed opened],
+                                requires: { state: 'parked' }
+                             }
                            ]
     end
     ```
